@@ -72,13 +72,17 @@ export default function SettingsScreen() {
           onChangeText={(t) => onChange('chatId', t)}
         />
 
-        <Text style={styles.label}>Threshold (dB)</Text>
+        <Text style={styles.label}>Threshold (dB, 0~120)</Text>
         <TextInput
           style={styles.input}
           placeholder="70"
           keyboardType="numeric"
           value={String(Math.round(settings.threshold))}
-          onChangeText={(t) => onChange('threshold', Number(t) || 0)}
+          onChangeText={(t) => {
+            const num = Number(t);
+            const clamped = Math.max(0, Math.min(120, isNaN(num) ? 0 : num));
+            onChange('threshold', clamped);
+          }}
         />
 
         <View style={styles.row}>

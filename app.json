@@ -22,7 +22,11 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MICROPHONE",
+        "WAKE_LOCK",
+        "POST_NOTIFICATIONS"
       ],
       "package": "com.reproducepark.dbnotitelegram"
     },
