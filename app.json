@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "db-noti-telegram",
+    "slug": "db-noti-telegram",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "dbnotitelegram",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "platforms": [
+      "android"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.reproducepark.dbnotitelegram"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "package": "com.reproducepark.dbnotitelegram"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5e635a75-7c98-4d70-8768-3f8dd7d1a6d0"
+      }
+    }
+  }
+}
