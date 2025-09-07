@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: '#0a7ea4',
+    // color는 useThemeColor('tint')를 쓰도록 컴포넌트 사용 시 덮어씌우는 방식을 권장
   },
 });

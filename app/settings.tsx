@@ -1,6 +1,6 @@
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
 
 import { AppSettings, loadSettings, saveSettings } from '@/utils/storage';
 import { sendTelegramMessage } from '@/utils/telegram';
@@ -72,7 +72,7 @@ export default function SettingsScreen() {
           onChangeText={(t) => onChange('chatId', t)}
         />
 
-        <Text style={styles.label}>노이즈 임계값 (dB)</Text>
+        <Text style={styles.label}>Threshold (dB)</Text>
         <TextInput
           style={styles.input}
           placeholder="70"
@@ -105,11 +105,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    backgroundColor: '#FFFFFF',
   },
   row: {
     flexDirection: 'row',
@@ -124,10 +125,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   primary: {
-    backgroundColor: '#0a84ff',
+    backgroundColor: '#2563EB',
   },
   secondary: {
-    backgroundColor: '#34c759',
+    backgroundColor: '#0F172A',
   },
   buttonText: {
     color: 'white',

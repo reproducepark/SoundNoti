@@ -20,12 +20,32 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'dark' ? {
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        primary: '#60A5FA',
+        background: '#0B1220',
+        card: '#111827',
+        border: '#1F2937',
+        text: '#E5E7EB',
+      },
+    } : {
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: '#2563EB',
+        background: '#F8FAFC',
+        card: '#FFFFFF',
+        border: '#E2E8F0',
+        text: '#0F172A',
+      },
+    }}>
       <Stack>
         <Stack.Screen
           name="index"
           options={{
-            title: 'Monitor',
+            title: 'SoundNoti',
             headerRight: ({ tintColor }) => (
               <Link href="/settings" asChild>
                 <Pressable accessibilityLabel="settings">

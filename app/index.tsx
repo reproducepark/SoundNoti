@@ -14,11 +14,11 @@ export default function HomeScreen() {
 
   const { currentDb, isMonitoring, start, stop } = useAudioMonitor({
     threshold,
-    cooldownMs: 60_000,
+    cooldownMs: 10_000,
     onThresholdExceed: async (dbValue) => {
       if (!botToken || !chatId) return;
       try {
-        await sendTelegramMessage({ botToken, chatId, text: `소음 레벨 경고: ${dbValue.toFixed(1)} dB` });
+        await sendTelegramMessage({ botToken, chatId, text: 'Code blue detected' });
       } catch (error) {
         // 사용자 방해 최소화를 위해 조용히 실패 처리
       }
@@ -63,7 +63,7 @@ export default function HomeScreen() {
     }
   }, [isMonitoring, start, stop]);
 
-  const buttonLabel = useMemo(() => (isMonitoring ? '중지' : '시작'), [isMonitoring]);
+  const buttonLabel = useMemo(() => (isMonitoring ? 'Stop' : 'Start'), [isMonitoring]);
 
   if (!isReady) {
     return (
@@ -75,9 +75,9 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>음성 레벨</Text>
+      <Text style={styles.title}>Sound Level</Text>
       <Text style={styles.level}>{currentDb.toFixed(1)} dB</Text>
-      <Text style={styles.threshold}>임계값: {threshold.toFixed(0)} dB</Text>
+      <Text style={styles.threshold}>Threshold: {threshold.toFixed(0)} dB</Text>
 
       <Pressable onPress={toggleMonitoring} style={[styles.button, isMonitoring ? styles.buttonStop : styles.buttonStart]}>
         <Text style={styles.buttonText}>{buttonLabel}</Text>
@@ -113,10 +113,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   buttonStart: {
-    backgroundColor: '#0a84ff',
+    backgroundColor: '#2563EB',
   },
   buttonStop: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#EF4444',
   },
   buttonText: {
     color: 'white',
