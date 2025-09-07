@@ -1,6 +1,6 @@
 import { toByteArray } from 'base64-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import AudioRecord from 'react-native-audio-record';
 import BackgroundService from 'react-native-background-actions';
 
@@ -25,6 +25,7 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
   const cooldownRef = useRef<number>(cooldownMs);
   const holdRef = useRef<number>(holdMs);
   const hysteresisRef = useRef<number>(hysteresisDb);
+  const lastNotifUpdateAtRef = useRef<number>(0);
 
   useEffect(() => {
     thresholdRef.current = threshold;
@@ -170,14 +171,23 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
     startedRef.current = true;
     setIsMonitoring(true);
     try {
-      // Android 13+에서 알림 권한 거부 시 Foreground Service 시작이 차단될 수 있어 폴백 분기
+      // Android 13+: 알림 권한이 없으면 Foreground Service 시작이 거부될 수 있으므로 선행 체크
       if (notifGranted) {
         await BackgroundService.start(task, options as any);
       } else {
+        try {
+          // eslint-disable-next-line no-alert
+          Alert.alert('알림 권한 필요', '상단 알림 표시가 차단되어 인앱 모드로 실행합니다. 설정에서 알림을 허용하면 백그라운드가 활성화됩니다.');
+        } catch {}
         void task();
+        return;
       }
     } catch (e) {
-      // Fallback: run without background service
+      // Fallback: run without background service + 사용자 안내
+      try {
+        // eslint-disable-next-line no-alert
+        Alert.alert('알림 권한 필요', '상단 알림을 표시하려면 앱 알림 권한을 허용하세요. 일단 포그라운드에서 동작합니다.');
+      } catch {}
       setCurrentDb(0);
       if (!listenerAttachedRef.current) {
         AudioRecord.on('data', (data: string) => {
@@ -200,6 +210,16 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
           } else {
             aboveStartAtRef.current = 0;
           }
+          // 알림 갱신 (폴백 모드에선 실행 안될 수 있음)
+          try {
+            const ts = Date.now();
+            // @ts-ignore
+            if (BackgroundService.isRunning && BackgroundService.isRunning() && ts - lastNotifUpdateAtRef.current > 2000) {
+              lastNotifUpdateAtRef.current = ts;
+              // @ts-ignore
+              BackgroundService.updateNotification({ taskTitle: 'Voice monitoring', taskDesc: `${displayDb.toFixed(1)} dB (thr ${thresh})` });
+            }
+          } catch {}
         });
         listenerAttachedRef.current = true;
       }
