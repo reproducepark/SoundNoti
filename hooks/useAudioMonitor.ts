@@ -13,7 +13,7 @@ type UseAudioMonitorParams = {
 };
 
 export function useAudioMonitor(params: UseAudioMonitorParams) {
-  const { threshold, cooldownMs = 60_000, onThresholdExceed, holdMs = 400, hysteresisDb = 2 } = params;
+  const { threshold, cooldownMs = 2_000, onThresholdExceed, holdMs = 400, hysteresisDb = 2 } = params;
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [currentDb, setCurrentDb] = useState(0);
   const lastTriggerAtRef = useRef<number>(0);
@@ -42,18 +42,29 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
 
   const ensurePermission = useCallback(async (): Promise<{ micGranted: boolean; notifGranted: boolean }> => {
     if (Platform.OS !== 'android') return { micGranted: true, notifGranted: true };
+    
+    // Check microphone permission
+    let micGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+    if (!micGranted) {
+      const micResult = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
+        title: '마이크 권한이 필요합니다',
+        message: '소음 레벨을 측정하기 위해 마이크 권한이 필요합니다.',
+        buttonPositive: '허용',
+        buttonNegative: '거부',
+      });
+      micGranted = micResult === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    
+    // Check notification permission for Android 13+
     const api = typeof Platform.Version === 'number' ? Platform.Version : parseInt(String(Platform.Version), 10);
-    const POST_NOTIFICATIONS = (PermissionsAndroid.PERMISSIONS as unknown as { POST_NOTIFICATIONS?: string }).POST_NOTIFICATIONS;
-
-    const requests: string[] = [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
-    if (api >= 33 && POST_NOTIFICATIONS) requests.push(POST_NOTIFICATIONS);
-
-    const statuses = (await PermissionsAndroid.requestMultiple(requests as any)) as Record<string, string>;
-    const micGranted =
-      statuses[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO as unknown as string] === PermissionsAndroid.RESULTS.GRANTED;
-    const notifGranted = POST_NOTIFICATIONS
-      ? statuses[POST_NOTIFICATIONS as unknown as string] === PermissionsAndroid.RESULTS.GRANTED || api < 33
-      : true;
+    let notifGranted = true;
+    
+    if (api >= 33) {
+      const POST_NOTIFICATIONS = 'android.permission.POST_NOTIFICATIONS';
+      notifGranted = await PermissionsAndroid.check(POST_NOTIFICATIONS as any);
+      // Notification permission is already requested in useNotificationPermission hook
+    }
+    
     return { micGranted, notifGranted };
   }, []);
 

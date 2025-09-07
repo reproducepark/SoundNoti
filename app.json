@@ -48,7 +48,8 @@
       ],
       [
         "./plugins/with-foreground-mic-service"
-      ]
+      ],
+      ["expo-build-properties", { "android": { "targetSdkVersion": 35, "compileSdkVersion": 35 } }]
     ],
     "experiments": {
       "typedRoutes": true

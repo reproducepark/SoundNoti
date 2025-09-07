@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { checkNotificationPermission, openAppSettings } from '@/utils/permissions';
 import { AppSettings, loadSettings, saveSettings } from '@/utils/storage';
 import { sendTelegramMessage } from '@/utils/telegram';
 
@@ -10,11 +11,18 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>({ botToken: '', chatId: '', threshold: 70 });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [hasNotificationPermission, setHasNotificationPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
       const loaded = await loadSettings();
       setSettings(loaded);
+      
+      // Check notification permission
+      if (Platform.OS === 'android') {
+        const hasPermission = await checkNotificationPermission();
+        setHasNotificationPermission(hasPermission);
+      }
     })();
   }, []);
 
@@ -93,6 +101,16 @@ export default function SettingsScreen() {
             <Text style={styles.buttonText}>{testing ? '테스트 중...' : '테스트 전송'}</Text>
           </Pressable>
         </View>
+        
+        {Platform.OS === 'android' && hasNotificationPermission === false && (
+          <View style={styles.warningContainer}>
+            <Text style={styles.warningText}>⚠️ 알림 권한이 거부되어 있습니다</Text>
+            <Text style={styles.warningSubtext}>백그라운드 동작을 위해 알림 권한이 필요합니다</Text>
+            <Pressable onPress={openAppSettings} style={[styles.button, styles.warningButton]}>
+              <Text style={styles.buttonText}>알림 설정 열기</Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -138,6 +156,28 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '700',
     fontSize: 16,
+  },
+  warningContainer: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: '#FFF3CD',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FFC107',
+  },
+  warningText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#856404',
+    marginBottom: 4,
+  },
+  warningSubtext: {
+    fontSize: 14,
+    color: '#856404',
+    marginBottom: 12,
+  },
+  warningButton: {
+    backgroundColor: '#FFC107',
   },
 });
 

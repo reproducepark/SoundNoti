@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAudioMonitor } from '@/hooks/useAudioMonitor';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { loadSettings } from '@/utils/storage';
 import { sendTelegramMessage } from '@/utils/telegram';
 
@@ -11,10 +12,13 @@ export default function HomeScreen() {
   const [threshold, setThreshold] = useState<number>(70);
   const [botToken, setBotToken] = useState<string>('');
   const [chatId, setChatId] = useState<string>('');
+  
+  // Request notification permission on app start
+  const { hasPermission: hasNotificationPermission } = useNotificationPermission();
 
   const { currentDb, isMonitoring, start, stop } = useAudioMonitor({
     threshold,
-    cooldownMs: 5_000,
+    cooldownMs: 2_000,
     onThresholdExceed: async (dbValue) => {
       if (!botToken || !chatId) return;
       try {
