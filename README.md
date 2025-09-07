@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+# SoundNoti
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An Android application that detects decibel levels in real-time and sends notifications through Telegram Bot API when the configured threshold is exceeded.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Real-time Sound Detection**: Continuously monitors ambient noise through the microphone
+- **Decibel Measurement**: Accurate noise level measurement and display
+- **Telegram Notifications**: Instant notifications via Telegram bot when decibel threshold is exceeded
+- **Background Execution**: Sound detection functionality maintained even when app is in background
 
-   ```bash
-   npm install
-   ```
+## Installation and Build
 
-2. Start the app
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Android Studio (for Android development)
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### Installation
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Build
+```bash
+eas build --platform android --profile preview --local
+```
 
-## Learn more
+## Usage
 
-To learn more about developing your project with Expo, look at the following resources:
+1. **App Installation**: Install the built APK file on Android device
+2. **Permission Setup**: Grant microphone and notification permissions
+3. **Telegram Bot Setup**:
+   - Create a bot through @BotFather on Telegram
+   - Configure bot token and chat ID
+4. **Threshold Setup**: Set desired decibel threshold
+5. **Start Monitoring**: Launch background service
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Configuration
 
-## Join the community
+### Telegram Bot Setup
+```
+Enter the bot token received from BotFather in the app settings.
+To get chat ID, send a message to your bot and check using this API:
+https://api.telegram.org/bot<YourBOTToken>/getUpdates
+```
 
-Join our community of developers creating universal apps.
+### Permission Requirements
+- `RECORD_AUDIO`: Microphone access permission
+- `FOREGROUND_SERVICE`: Background execution permission
+- `POST_NOTIFICATIONS`: Notification sending permission
+- `WAKE_LOCK`: Screen lock prevention
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Troubleshooting
+
+### Build Failure
+```bash
+# Clear cache
+rm -rf .expo .expo-shared node_modules/.cache
+
+# Regenerate Android directory
+npx expo prebuild --platform android
+
+# Rebuild
+eas build --platform android --profile preview --local
+```
+
+## License
+
+This project is licensed under the MIT License.
