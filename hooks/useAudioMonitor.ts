@@ -1,5 +1,5 @@
 import { toByteArray } from 'base64-js';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 import AudioRecord from 'react-native-audio-record';
 import BackgroundService from 'react-native-background-actions';
@@ -21,29 +21,39 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
   const listenerAttachedRef = useRef(false);
   const aboveStartAtRef = useRef<number>(0);
   const emaDbRef = useRef<number>(0);
+  const thresholdRef = useRef<number>(threshold);
+  const cooldownRef = useRef<number>(cooldownMs);
+  const holdRef = useRef<number>(holdMs);
+  const hysteresisRef = useRef<number>(hysteresisDb);
 
-  const ensurePermission = useCallback(async () => {
-    if (Platform.OS !== 'android') return true;
-    let ok = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-    if (!ok) {
-      const res = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-      ok = res === PermissionsAndroid.RESULTS.GRANTED;
-    }
-    if (!ok) return false;
+  useEffect(() => {
+    thresholdRef.current = threshold;
+  }, [threshold]);
+  useEffect(() => {
+    cooldownRef.current = cooldownMs;
+  }, [cooldownMs]);
+  useEffect(() => {
+    holdRef.current = holdMs;
+  }, [holdMs]);
+  useEffect(() => {
+    hysteresisRef.current = hysteresisDb;
+  }, [hysteresisDb]);
 
-    // Android 13+ requires POST_NOTIFICATIONS for foreground service notification
+  const ensurePermission = useCallback(async (): Promise<{ micGranted: boolean; notifGranted: boolean }> => {
+    if (Platform.OS !== 'android') return { micGranted: true, notifGranted: true };
     const api = typeof Platform.Version === 'number' ? Platform.Version : parseInt(String(Platform.Version), 10);
-    const POST_NOTIFICATIONS = (PermissionsAndroid.PERMISSIONS as unknown as Record<string, string>)[
-      'POST_NOTIFICATIONS'
-    ];
-    if (api >= 33 && POST_NOTIFICATIONS) {
-      const notifGranted = await PermissionsAndroid.check(POST_NOTIFICATIONS as any);
-      if (!notifGranted) {
-        await PermissionsAndroid.request(POST_NOTIFICATIONS as any);
-      }
-    }
+    const POST_NOTIFICATIONS = (PermissionsAndroid.PERMISSIONS as unknown as { POST_NOTIFICATIONS?: string }).POST_NOTIFICATIONS;
 
-    return true;
+    const requests: string[] = [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
+    if (api >= 33 && POST_NOTIFICATIONS) requests.push(POST_NOTIFICATIONS);
+
+    const statuses = (await PermissionsAndroid.requestMultiple(requests as any)) as Record<string, string>;
+    const micGranted =
+      statuses[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO as unknown as string] === PermissionsAndroid.RESULTS.GRANTED;
+    const notifGranted = POST_NOTIFICATIONS
+      ? statuses[POST_NOTIFICATIONS as unknown as string] === PermissionsAndroid.RESULTS.GRANTED || api < 33
+      : true;
+    return { micGranted, notifGranted };
   }, []);
 
   const initRecorder = useCallback((source: number = 6) => {
@@ -103,8 +113,8 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
       throw new Error('AudioRecord 모듈을 찾을 수 없습니다. EAS Build 또는 expo run:android로 네이티브 빌드가 필요합니다.');
     }
     if (startedRef.current) return;
-    const ok = await ensurePermission();
-    if (!ok) {
+    const { micGranted, notifGranted } = await ensurePermission();
+    if (!micGranted) {
       throw new Error('RECORD_AUDIO 권한이 필요합니다.');
     }
     const task = async () => {
@@ -119,17 +129,18 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
           const peakDb = Math.max(sampleDb, ema);
           setCurrentDb(displayDb);
 
-          const thresh = Math.max(0, Math.min(120, threshold));
+          const thresh = Math.max(0, Math.min(120, thresholdRef.current));
           const now = Date.now();
 
           if (peakDb >= thresh) {
             if (aboveStartAtRef.current === 0) aboveStartAtRef.current = now;
             const heldFor = now - aboveStartAtRef.current;
-            if (heldFor >= holdMs && now - lastTriggerAtRef.current > cooldownMs) {
+            if (heldFor >= holdRef.current && now - lastTriggerAtRef.current > cooldownRef.current) {
               lastTriggerAtRef.current = now;
               onThresholdExceed?.(peakDb);
             }
-          } else if (peakDb < Math.max(0, thresh - hysteresisDb)) {
+          } else {
+            // Reset hold immediately when below threshold to require continuous above-threshold time
             aboveStartAtRef.current = 0;
           }
         });
@@ -159,12 +170,10 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
     startedRef.current = true;
     setIsMonitoring(true);
     try {
-      const api = typeof Platform.Version === 'number' ? Platform.Version : parseInt(String(Platform.Version), 10);
-      const canUseBgService = Platform.OS === 'android' && api < 34; // Android 14+ crashes without proper service type
-      if (canUseBgService) {
+      // Android 13+에서 알림 권한 거부 시 Foreground Service 시작이 차단될 수 있어 폴백 분기
+      if (notifGranted) {
         await BackgroundService.start(task, options as any);
       } else {
-        // Fallback for Android 14+: run inline without starting foreground service
         void task();
       }
     } catch (e) {
@@ -179,16 +188,16 @@ export function useAudioMonitor(params: UseAudioMonitorParams) {
           const peakDb = Math.max(sampleDb, ema);
           setCurrentDb(displayDb);
 
-          const thresh = Math.max(0, Math.min(120, threshold));
+          const thresh = Math.max(0, Math.min(120, thresholdRef.current));
           const now = Date.now();
           if (peakDb >= thresh) {
             if (aboveStartAtRef.current === 0) aboveStartAtRef.current = now;
             const heldFor = now - aboveStartAtRef.current;
-            if (heldFor >= holdMs && now - lastTriggerAtRef.current > cooldownMs) {
+            if (heldFor >= holdRef.current && now - lastTriggerAtRef.current > cooldownRef.current) {
               lastTriggerAtRef.current = now;
               onThresholdExceed?.(peakDb);
             }
-          } else if (peakDb < Math.max(0, thresh - hysteresisDb)) {
+          } else {
             aboveStartAtRef.current = 0;
           }
         });

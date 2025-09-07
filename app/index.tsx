@@ -14,7 +14,7 @@ export default function HomeScreen() {
 
   const { currentDb, isMonitoring, start, stop } = useAudioMonitor({
     threshold,
-    cooldownMs: 10_000,
+    cooldownMs: 5_000,
     onThresholdExceed: async (dbValue) => {
       if (!botToken || !chatId) return;
       try {

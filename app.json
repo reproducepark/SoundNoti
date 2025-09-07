@@ -45,6 +45,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "./plugins/with-foreground-mic-service"
       ]
     ],
     "experiments": {
